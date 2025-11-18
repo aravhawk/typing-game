@@ -7,7 +7,7 @@ import { nanoid } from "nanoid";
 import { toast } from "sonner";
 import { shareGameResult } from "@/app/actions/share";
 import { useKeyboardSounds } from "@/lib/use-keyboard-sounds";
-import { Volume2, VolumeX, Medal, Flag, Clock } from "lucide-react";
+import { Volume2, VolumeX, Medal, Flag } from "lucide-react";
 import Link from "next/link";
 import { getTimerPreference, setTimerPreference } from "@/app/actions/timer-preference";
 
@@ -441,10 +441,52 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
   };
 
   return (
-    <div 
+    <div
       className="flex flex-col items-center justify-center min-h-screen p-4"
       onClick={handleClick}
     >
+      {/* Timer selector - segmented control at top */}
+      <div className="mb-8 flex items-center justify-center">
+        <div className="inline-flex rounded-lg bg-muted/30 p-1 gap-1">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!state.isGameActive && timerPreference !== 15) {
+                handleTimerToggle();
+              }
+              setTimeout(() => inputRef.current?.focus(), 0);
+            }}
+            disabled={state.isGameActive}
+            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+              timerPreference === 15
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            } ${state.isGameActive ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            aria-label="15 second timer"
+          >
+            15s
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!state.isGameActive && timerPreference !== 30) {
+                handleTimerToggle();
+              }
+              setTimeout(() => inputRef.current?.focus(), 0);
+            }}
+            disabled={state.isGameActive}
+            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+              timerPreference === 30
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            } ${state.isGameActive ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            aria-label="30 second timer"
+          >
+            30s
+          </button>
+        </div>
+      </div>
+
       <div className="max-w-4xl w-full mb-8">
         <div className="relative">
           <div 
@@ -552,22 +594,6 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
       >
         <Medal className="w-5 h-5" strokeWidth={1.5} />
       </Link>
-
-      {/* Timer toggle button - bottom right */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          handleTimerToggle();
-          setTimeout(() => inputRef.current?.focus(), 0);
-        }}
-        className="fixed bottom-4 right-20 w-8 h-8 flex items-center justify-center text-muted-foreground/60 hover:text-muted-foreground transition-colors relative group"
-        aria-label={`Switch to ${timerPreference === 30 ? 15 : 30} second timer`}
-      >
-        <Clock className="w-5 h-5" strokeWidth={1.5} />
-        <span className="absolute -top-1 -right-1 text-[10px] font-bold bg-background px-0.5 rounded">
-          {timerPreference}
-        </span>
-      </button>
 
       {/* Race flag button - bottom right */}
       <button
