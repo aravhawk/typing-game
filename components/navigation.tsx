@@ -1,9 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { authClient } from "@/lib/auth-client";
+import { authClient, signOut } from "@/lib/auth-client";
 import { useSession } from "@/lib/auth-client";
-import { Github } from "lucide-react";
+import { Github, LogOut } from "lucide-react";
 
 export function Navigation() {
   const { data: sessionData, isPending } = useSession();
@@ -13,6 +13,10 @@ export function Navigation() {
       provider: "google",
       callbackURL: "/",
     });
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
   };
 
   return (
@@ -28,22 +32,32 @@ export function Navigation() {
           <Github className="w-6 h-6" />
         </a>
         {sessionData?.user ? (
-          <a
-            href="/profile"
-            className="flex items-center hover:opacity-80 transition-opacity"
-            title={sessionData.user.name}
-            aria-label={`View profile for ${sessionData.user.name}`}
-          >
-            {sessionData.user.image && (
-              <Image
-                src={sessionData.user.image}
-                alt={sessionData.user.name}
-                width={36}
-                height={36}
-                className="rounded-full"
-              />
-            )}
-          </a>
+          <>
+            <a
+              href="/profile"
+              className="flex items-center hover:opacity-80 transition-opacity"
+              title={sessionData.user.name}
+              aria-label={`View profile for ${sessionData.user.name}`}
+            >
+              {sessionData.user.image && (
+                <Image
+                  src={sessionData.user.image}
+                  alt={sessionData.user.name}
+                  width={36}
+                  height={36}
+                  className="rounded-full"
+                />
+              )}
+            </a>
+            <button
+              onClick={handleSignOut}
+              className="flex items-center gap-2 text-base px-4 py-1 border border-border rounded-full hover:bg-secondary/50 transition-colors"
+              aria-label="Sign out"
+            >
+              <LogOut className="w-4 h-4" />
+              Logout
+            </button>
+          </>
         ) : (
           <button
             onClick={handleSignIn}
