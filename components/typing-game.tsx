@@ -5,7 +5,7 @@ import { getRandomExcerpt } from "@/lib/excerpts";
 import { copy } from "clipboard";
 import { nanoid } from "nanoid";
 import { toast } from "sonner";
-import { shareGameResult } from "@/app/actions/share";
+import { saveGameResult, createShareableLink } from "@/app/actions/share";
 import { useKeyboardSounds } from "@/lib/use-keyboard-sounds";
 import { Volume2, VolumeX, Flag, Trophy, Medal, X } from "lucide-react";
 import { getTimerPreference, setTimerPreference } from "@/app/actions/timer-preference";
@@ -51,7 +51,8 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
   const cursorMoveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [currentWPM, setCurrentWPM] = useState(0);
   const [wpmHistory, setWpmHistory] = useState<Array<{ time: number; wpm: number }>>([]);
-  
+  const [savedGameResultId, setSavedGameResultId] = useState<string | null>(null);
+
   // Race mode
   const [raceModeEnabled, setRaceModeEnabled] = useState(false);
   const [selectedOpponent, setSelectedOpponent] = useState<{ wpm: number; playerName: string | null; accuracy: number; duration: number } | null>(null);
@@ -322,6 +323,24 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
           finalAccuracy: results.accuracy,
         }));
         onGameFinish?.(results);
+
+        // Auto-save game results to database
+        saveGameResult({
+          wpm: results.wpm,
+          accuracy: results.accuracy,
+          duration: results.duration,
+          textExcerpt: state.text,
+          wpmHistory: results.wpmHistory.length > 0 ? results.wpmHistory : undefined,
+        })
+          .then((result) => {
+            if (result.success && result.gameResultId) {
+              setSavedGameResultId(result.gameResultId);
+            }
+          })
+          .catch((error) => {
+            console.error("Failed to auto-save game result:", error);
+            // Don't show error to user - this is a background operation
+          });
       }, 0);
     }
   }, [state.timer, state.isGameActive, state.isGameFinished, state.userInput, state.text, state.startTime, onGameFinish, getCorrectChars, wpmHistory]);
@@ -349,6 +368,24 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
           finalAccuracy: results.accuracy,
         }));
         onGameFinish?.(results);
+
+        // Auto-save game results to database
+        saveGameResult({
+          wpm: results.wpm,
+          accuracy: results.accuracy,
+          duration: results.duration,
+          textExcerpt: state.text,
+          wpmHistory: results.wpmHistory.length > 0 ? results.wpmHistory : undefined,
+        })
+          .then((result) => {
+            if (result.success && result.gameResultId) {
+              setSavedGameResultId(result.gameResultId);
+            }
+          })
+          .catch((error) => {
+            console.error("Failed to auto-save game result:", error);
+            // Don't show error to user - this is a background operation
+          });
       }, 0);
     }
   }, [state.userInput, state.text, state.isGameActive, state.isGameFinished, state.startTime, onGameFinish, getCorrectChars, wpmHistory]);
@@ -366,29 +403,48 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
     });
     setCurrentWPM(0);
     setWpmHistory([]);
+    setSavedGameResultId(null);
     setGhostCursorPosition({ left: "-2", top: 2 });
     inputRef.current?.focus();
   };
 
   const handleShare = async () => {
-    const id = nanoid(8);
+    const shortId = nanoid(8);
+    const shareUrl = `${window.location.origin}/s/${shortId}`;
 
     // Optimistically copy to clipboard and show success
-    const shareUrl = `${window.location.origin}/s/${id}`;
     await copy(shareUrl);
     toast.success("Link copied to clipboard!");
 
-    // Save to database in the background
+    // Create shareable link in the background
     try {
-      await shareGameResult({
-        shortId: id,
-        wpm: state.finalWPM,
-        accuracy: state.finalAccuracy,
-        duration: timerPreference - state.timer, // Use timer preference for accurate duration
-        wpmHistory: wpmHistory.length > 0 ? wpmHistory : undefined,
-      });
-    } catch {
-      toast.error("Failed to save results");
+      if (savedGameResultId) {
+        // Use the already saved game result
+        await createShareableLink({
+          shortId,
+          gameResultId: savedGameResultId,
+        });
+      } else {
+        // Fallback: save the game result if it wasn't saved automatically
+        const result = await saveGameResult({
+          wpm: state.finalWPM,
+          accuracy: state.finalAccuracy,
+          duration: timerPreference - state.timer,
+          textExcerpt: state.text,
+          wpmHistory: wpmHistory.length > 0 ? wpmHistory : undefined,
+        });
+
+        if (result.success && result.gameResultId) {
+          await createShareableLink({
+            shortId,
+            gameResultId: result.gameResultId,
+          });
+          setSavedGameResultId(result.gameResultId);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to create shareable link:", error);
+      toast.error("Failed to create shareable link");
     }
   };
 
