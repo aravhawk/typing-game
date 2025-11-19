@@ -7,8 +7,7 @@ import { nanoid } from "nanoid";
 import { toast } from "sonner";
 import { shareGameResult } from "@/app/actions/share";
 import { useKeyboardSounds } from "@/lib/use-keyboard-sounds";
-import { Volume2, VolumeX, Medal, Flag } from "lucide-react";
-import Link from "next/link";
+import { Volume2, VolumeX, Flag } from "lucide-react";
 import { getTimerPreference, setTimerPreference } from "@/app/actions/timer-preference";
 
 interface GameState {
@@ -585,15 +584,6 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
           Restart
         </button>
       </div>
-
-      {/* Leaderboard button - bottom right */}
-      <Link
-        href="/leaderboard"
-        className="fixed bottom-4 right-28 w-8 h-8 flex items-center justify-center text-muted-foreground/60 hover:text-muted-foreground transition-colors"
-        aria-label="View leaderboard"
-      >
-        <Medal className="w-5 h-5" strokeWidth={1.5} />
-      </Link>
 
       {/* Race flag button - bottom right */}
       <button
