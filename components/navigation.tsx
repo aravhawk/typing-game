@@ -1,9 +1,10 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { authClient, signOut } from "@/lib/auth-client";
 import { useSession } from "@/lib/auth-client";
-import { Github, LogIn, LogOut } from "lucide-react";
+import { Github, LogIn, LogOut, Medal } from "lucide-react";
 
 export function Navigation() {
   const { data: sessionData, isPending } = useSession();
@@ -22,6 +23,13 @@ export function Navigation() {
   return (
     <nav className="fixed top-0 left-0 right-0 p-4 flex justify-end items-center z-50">
       <div className={`flex items-center gap-4 transition-opacity ${isPending ? 'opacity-0' : 'opacity-100'}`}>
+        <Link
+          href="/leaderboard"
+          className="hover:opacity-80 transition-opacity"
+          aria-label="View leaderboard"
+        >
+          <Medal className="w-6 h-6" />
+        </Link>
         <a
           href="https://github.com/aravhawk/typing-game"
           target="_blank"
