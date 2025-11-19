@@ -547,6 +547,26 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
         </div>
       </div>
 
+      {/* Race mode button - centered below text */}
+      <div className="flex justify-center mb-8">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setRaceModeEnabled(!raceModeEnabled);
+            setTimeout(() => inputRef.current?.focus(), 0);
+          }}
+          className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
+            raceModeEnabled
+              ? 'bg-purple-500/10 text-purple-500 hover:bg-purple-500/20'
+              : 'bg-muted/30 text-muted-foreground/60 hover:bg-muted/50 hover:text-muted-foreground'
+          }`}
+          aria-label={raceModeEnabled ? "Disable race mode" : "Enable race mode"}
+        >
+          <Flag className="w-4 h-4" />
+          <span className="text-sm font-medium">Race Mode</span>
+        </button>
+      </div>
+
       <input
         ref={inputRef}
         type="text"
@@ -584,23 +604,6 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
           Restart
         </button>
       </div>
-
-      {/* Race flag button - bottom right */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          setRaceModeEnabled(!raceModeEnabled);
-          setTimeout(() => inputRef.current?.focus(), 0);
-        }}
-        className={`fixed bottom-4 right-12 w-8 h-8 flex items-center justify-center transition-colors ${
-          raceModeEnabled
-            ? 'text-purple-500 hover:text-purple-600'
-            : 'text-muted-foreground/60 hover:text-muted-foreground'
-        }`}
-        aria-label={raceModeEnabled ? "Disable race mode" : "Enable race mode"}
-      >
-        <Flag className="w-5 h-5" />
-      </button>
 
       {/* Sound toggle button - bottom right */}
       <button
