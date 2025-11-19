@@ -4,6 +4,7 @@ import { gameResults } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { Navigation } from "@/components/navigation";
 import { BottomNav } from "@/components/bottom-nav";
+import { BackButton } from "@/components/back-button";
 
 async function getUserStats(userId: string) {
   const allResults = await db.query.gameResults.findMany({
@@ -97,6 +98,7 @@ export default async function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-black">
+      <BackButton />
       <Navigation />
       <BottomNav />
       <div className="max-w-4xl mx-auto p-8 pt-24">
