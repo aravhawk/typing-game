@@ -1,5 +1,4 @@
 import { Navigation } from "@/components/navigation";
-import { BottomNav } from "@/components/bottom-nav";
 import { BackButton } from "@/components/back-button";
 import { Trophy, Medal } from "lucide-react";
 import { db } from "@/lib/db";
@@ -38,7 +37,6 @@ export default async function LeaderboardPage() {
     <div className="min-h-screen bg-white dark:bg-black">
       <BackButton />
       <Navigation />
-      <BottomNav />
       <div className="pt-24 pb-16 px-4">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-large md:text-xlarge font-normal leading-none tracking-tighter mb-12">

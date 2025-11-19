@@ -3,7 +3,6 @@ import { db } from "@/lib/db";
 import { gameResults } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { Navigation } from "@/components/navigation";
-import { BottomNav } from "@/components/bottom-nav";
 import { BackButton } from "@/components/back-button";
 
 async function getUserStats(userId: string) {
@@ -100,7 +99,6 @@ export default async function ProfilePage() {
     <div className="min-h-screen bg-white dark:bg-black">
       <BackButton />
       <Navigation />
-      <BottomNav />
       <div className="max-w-4xl mx-auto p-8 pt-24">
         <StatsCard />
         <div className="mt-12">
