@@ -1,20 +1,22 @@
 # anytype
 
-A minimal typing simulator game built with Next.js, featuring real-time WPM tracking, leaderboards, and shareable results.
+A minimal typing test game built with Next.js, featuring real-time WPM tracking, leaderboards, and shareable results.
 
 ## Features
 
-- **30-second typing test** or complete the text to finish
+- **15s or 30s typing tests** with timer preference saved for logged-in users
 - **Real-time WPM tracking** with live updates every 100ms
 - **WPM history charts** showing performance over time
-- **Race mode** with ghost cursor showing the top leaderboard entry
-- **Keyboard sound effects** (toggleable) using Howler.js
+- **Race mode** with ghost cursor to compete against any player from the leaderboard
+- **Toggleable keyboard sound effects** using Howler.js
 - **Leaderboard** displaying top 10 players by WPM
 - **User profiles** with best WPM, average WPM, and game history
 - **Shareable results** with unique short URLs and OpenGraph images
-- **Google OAuth** authentication via Better Auth
-- **Dark/Light theme** support with system preference detection
+- **Google OAuth authentication** via Better Auth
+- **Dark/Light theme support** with system preference detection
 - **Custom font** (CursorGothic) for enhanced typography
+- **Animated cursor** with smooth transitions during typing
+- **Game completion** by timer expiration or finishing the text excerpt
 
 ## Setup
 
@@ -84,41 +86,10 @@ Visit `http://localhost:3000` to start typing.
 
 ## Project Structure
 
-```
-├── app/
-│   ├── actions/
-│   │   └── share.ts              # Server action for saving shareable results
-│   ├── api/
-│   │   ├── auth/[...all]/        # Better Auth API routes
-│   │   └── leaderboard/top/      # API endpoint for top player
-│   ├── leaderboard/
-│   │   ├── page.tsx              # Leaderboard page
-│   │   └── opengraph-image.tsx   # OG image generation
-│   ├── profile/
-│   │   └── page.tsx              # User profile with stats
-│   ├── s/[shortId]/
-│   │   ├── page.tsx              # Shared result viewer
-│   │   └── opengraph-image.tsx   # OG image for shared results
-│   ├── layout.tsx                # Root layout with theme provider
-│   └── page.tsx                  # Main game page
-├── components/
-│   ├── ui/                       # Reusable UI components
-│   ├── navigation.tsx            # Top navigation bar
-│   ├── bottom-nav.tsx            # Bottom navigation
-│   ├── typing-game.tsx           # Main game component
-│   ├── wpm-chart.tsx             # WPM history chart
-│   └── theme-provider.tsx          # Theme provider
-├── lib/
-│   ├── db/
-│   │   ├── schema.ts             # Drizzle schema definitions
-│   │   └── index.ts              # Database client
-│   ├── auth.ts                   # Better Auth configuration
-│   ├── auth-client.ts            # Client-side auth utilities
-│   ├── auth-server.ts            # Server-side auth utilities
-│   ├── excerpts.ts               # Text excerpts for typing practice
-│   └── use-keyboard-sounds.ts    # Keyboard sound effects hook
-└── drizzle.config.ts             # Drizzle configuration
-```
+- **app/** - Next.js app directory with pages, API routes, and server actions
+- **components/** - React components including the main typing game and UI elements
+- **lib/** - Shared utilities, auth configuration, database schema, and text excerpts
+- **drizzle.config.ts** - Drizzle ORM configuration
 
 ## Scripts
 
@@ -131,29 +102,20 @@ Visit `http://localhost:3000` to start typing.
 - `pnpm db:push` - Push schema changes (dev only)
 - `pnpm db:studio` - Open Drizzle Studio
 
-## Key Features Explained
+## Game Mechanics
 
-### Game Mechanics
-
-- Timer starts when you type the first character
-- Game ends after 30 seconds or when text is completed
+- Timer starts on first keystroke
+- Game ends after timer expires (15s or 30s) or when text is completed
 - WPM calculated as: `(correct characters / 5) / minutes`
-- Accuracy shown as percentage of correct characters
-
-### Race Mode
-
-- Enable the flag icon to see a ghost cursor showing the top leaderboard player's speed
-- Helps visualize how you're performing relative to the best player
-
-### Sharing Results
-
-- Click "Share" after completing a game to get a unique short URL
-- Shared links include WPM history charts if available
-- OpenGraph images are automatically generated for social sharing
+- Accuracy calculated as: `(correct characters / total typed) * 100`
+- Race mode shows a ghost cursor tracking any selected leaderboard player's speed
+- Share button generates a unique short URL with WPM history and auto-generated OpenGraph images
 
 ## Database Schema
 
-- `user` - User accounts (Better Auth)
+- `user` - User accounts with timer preference (Better Auth)
 - `session` - User sessions (Better Auth)
-- `gameResults` - Stored game results with WPM, accuracy, duration, and history
-- `shareableResults` - Maps short IDs to game results
+- `account` - OAuth account data (Better Auth)
+- `verification` - Email verification tokens (Better Auth)
+- `gameResults` - Game results with WPM, accuracy, duration, and WPM history
+- `shareableResults` - Maps short IDs to game results for shareable links
