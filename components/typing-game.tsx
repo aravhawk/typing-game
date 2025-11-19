@@ -7,7 +7,7 @@ import { nanoid } from "nanoid";
 import { toast } from "sonner";
 import { shareGameResult } from "@/app/actions/share";
 import { useKeyboardSounds } from "@/lib/use-keyboard-sounds";
-import { Volume2, VolumeX, Flag } from "lucide-react";
+import { Volume2, VolumeX, Flag, Trophy, Medal, X } from "lucide-react";
 import { getTimerPreference, setTimerPreference } from "@/app/actions/timer-preference";
 
 interface GameState {
@@ -54,8 +54,10 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
   
   // Race mode
   const [raceModeEnabled, setRaceModeEnabled] = useState(false);
-  const [topEntry, setTopEntry] = useState<{ wpm: number; playerName: string | null } | null>(null);
+  const [selectedOpponent, setSelectedOpponent] = useState<{ wpm: number; playerName: string | null; accuracy: number; duration: number } | null>(null);
   const [ghostCursorPosition, setGhostCursorPosition] = useState<{ left: number | string; top: number }>({ left: "-2", top: 2 });
+  const [showOpponentSelector, setShowOpponentSelector] = useState(false);
+  const [leaderboardData, setLeaderboardData] = useState<Array<{ wpm: number; playerName: string | null; accuracy: number; duration: number }>>([]);
 
   // Timer preference
   const [timerPreference, setTimerPreferenceState] = useState<15 | 30>(30);
@@ -92,19 +94,20 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
     });
   }, []);
 
-  // Fetch top leaderboard entry when race mode is enabled
+  // Fetch leaderboard data when opponent selector is opened
   useEffect(() => {
-    if (raceModeEnabled) {
-      fetch("/api/leaderboard/top")
+    if (showOpponentSelector) {
+      fetch("/api/leaderboard")
         .then((res) => res.json())
         .then((data) => {
-          setTopEntry(data);
+          setLeaderboardData(data);
         })
         .catch((error) => {
-          console.error("Error fetching top entry:", error);
+          console.error("Error fetching leaderboard:", error);
+          toast.error("Failed to load leaderboard");
         });
     }
-  }, [raceModeEnabled]);
+  }, [showOpponentSelector]);
 
   // Track cursor movement state
   useEffect(() => {
@@ -169,31 +172,31 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
 
   // Update ghost cursor position (similar to regular cursor)
   useLayoutEffect(() => {
-    if (!textContainerRef.current || !raceModeEnabled || !topEntry) return;
+    if (!textContainerRef.current || !raceModeEnabled || !selectedOpponent) return;
 
     const container = textContainerRef.current;
     const spans = container.querySelectorAll('span[data-char]');
-    
+
     if (spans.length === 0) return;
 
-    // Ghost cursor tracks a virtual "input" at the speed of top entry
+    // Ghost cursor tracks a virtual "input" at the speed of selected opponent
     // We'll update this based on game time
     const updateGhostCursor = () => {
       if (!state.isGameActive || !state.startTime) return;
-      
+
       const elapsedMs = Date.now() - state.startTime;
-      const wpm = topEntry.wpm;
+      const wpm = selectedOpponent.wpm;
       // Characters per second = (wpm * 5) / 60
       const charsPerSecond = (wpm * 5) / 60;
       const charactersTyped = Math.floor(elapsedMs / 1000 * charsPerSecond);
-      
+
       if (charactersTyped === 0) {
         setGhostCursorPosition({ left: "-2", top: 0 });
       } else if (charactersTyped < spans.length) {
         const targetSpan = spans[charactersTyped] as HTMLElement;
         const rect = targetSpan.getBoundingClientRect();
         const containerRect = container.getBoundingClientRect();
-        
+
         setGhostCursorPosition({
           left: rect.left - containerRect.left,
           top: rect.top - containerRect.top,
@@ -202,7 +205,7 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
         const lastSpan = spans[spans.length - 1] as HTMLElement;
         const rect = lastSpan.getBoundingClientRect();
         const containerRect = container.getBoundingClientRect();
-        
+
         setGhostCursorPosition({
           left: rect.right - containerRect.left,
           top: rect.top - containerRect.top,
@@ -212,9 +215,9 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
 
     const interval = setInterval(updateGhostCursor, 50);
     updateGhostCursor(); // Initial call
-    
+
     return () => clearInterval(interval);
-  }, [state.isGameActive, state.startTime, state.text, raceModeEnabled, topEntry]);
+  }, [state.isGameActive, state.startTime, state.text, raceModeEnabled, selectedOpponent]);
 
   const handleInput = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -525,11 +528,11 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
           />
           
           {/* Ghost cursor (race mode) */}
-          {raceModeEnabled && topEntry && state.isGameActive && !state.isGameFinished && (
-            <div 
-              className="absolute pointer-events-none" 
-              style={{ 
-                left: `${ghostCursorPosition.left}px`, 
+          {raceModeEnabled && selectedOpponent && state.isGameActive && !state.isGameFinished && (
+            <div
+              className="absolute pointer-events-none"
+              style={{
+                left: `${ghostCursorPosition.left}px`,
                 top: `${ghostCursorPosition.top + 2}px`,
                 transition: 'left 0.15s ease-out, top 0.15s ease-out',
               }}
@@ -537,7 +540,7 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
               {/* Player name label above cursor */}
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1">
                 <div className="bg-purple-500 text-white text-xs px-2 py-0.5 rounded whitespace-nowrap">
-                  {topEntry.playerName || "Anonymous"}
+                  {selectedOpponent.playerName || "Anonymous"}
                 </div>
               </div>
               {/* Purple cursor line */}
@@ -552,7 +555,14 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
         <button
           onClick={(e) => {
             e.stopPropagation();
-            setRaceModeEnabled(!raceModeEnabled);
+            if (raceModeEnabled) {
+              // Disable race mode
+              setRaceModeEnabled(false);
+              setSelectedOpponent(null);
+            } else {
+              // Show opponent selector
+              setShowOpponentSelector(true);
+            }
             setTimeout(() => inputRef.current?.focus(), 0);
           }}
           className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
@@ -563,7 +573,11 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
           aria-label={raceModeEnabled ? "Disable race mode" : "Enable race mode"}
         >
           <Flag className="w-4 h-4" />
-          <span className="text-sm font-medium">Race Mode</span>
+          <span className="text-sm font-medium">
+            {raceModeEnabled && selectedOpponent
+              ? `Racing ${selectedOpponent.playerName || "Anonymous"}`
+              : "Race Mode"}
+          </span>
         </button>
       </div>
 
@@ -621,6 +635,92 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
           <VolumeX className="w-5 h-5" />
         )}
       </button>
+
+      {/* Opponent Selector Modal */}
+      {showOpponentSelector && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowOpponentSelector(false);
+            setTimeout(() => inputRef.current?.focus(), 0);
+          }}
+        >
+          <div
+            className="bg-background border border-border rounded-lg max-w-2xl w-full max-h-[80vh] overflow-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-background border-b border-border p-6 flex items-center justify-between">
+              <h2 className="text-large font-medium">Select Opponent</h2>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowOpponentSelector(false);
+                  setTimeout(() => inputRef.current?.focus(), 0);
+                }}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Leaderboard List */}
+            <div className="p-6">
+              {leaderboardData.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>Loading leaderboard...</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {leaderboardData.map((player, index) => (
+                    <button
+                      key={index}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedOpponent(player);
+                        setRaceModeEnabled(true);
+                        setShowOpponentSelector(false);
+                        setTimeout(() => inputRef.current?.focus(), 0);
+                      }}
+                      className="w-full flex items-center gap-4 py-4 px-4 rounded-lg hover:bg-muted/30 transition-colors border border-transparent hover:border-border"
+                    >
+                      <div className="flex items-center justify-center w-12 h-12">
+                        {index === 0 ? (
+                          <Trophy className="w-8 h-8 text-yellow-500" />
+                        ) : index === 1 ? (
+                          <Medal className="w-8 h-8 text-gray-400" />
+                        ) : index === 2 ? (
+                          <Medal className="w-8 h-8 text-amber-600" />
+                        ) : (
+                          <span className="text-large font-bold text-muted-foreground tabular-nums">
+                            {index + 1}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex-1 text-left">
+                        <div className="font-medium text-foreground">
+                          {player.playerName || "Anonymous"}
+                        </div>
+                        <div className="text-small text-muted-foreground">
+                          {player.accuracy}% accuracy • {player.duration}s
+                        </div>
+                      </div>
+
+                      <div className="text-right">
+                        <div className="text-large font-bold tabular-nums">{player.wpm}</div>
+                        <div className="text-small text-muted-foreground">WPM</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
