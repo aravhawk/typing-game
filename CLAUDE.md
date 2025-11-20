@@ -28,7 +28,8 @@ typing-game/
 ├── app/                          # Next.js App Router
 │   ├── actions/                  # Server Actions
 │   │   ├── share.ts              # Share game results
-│   │   └── timer-preference.ts   # Timer preference management
+│   │   ├── timer-preference.ts   # Timer preference management
+│   │   └── generate-paragraph.ts # AI paragraph generation (OpenAI)
 │   ├── api/                      # API Routes
 │   │   ├── auth/[...all]/        # Better Auth catch-all route
 │   │   └── leaderboard/          # Leaderboard endpoints
@@ -230,6 +231,7 @@ GOOGLE_CLIENT_SECRET="..."                # Google OAuth client secret
 NEXT_PUBLIC_BASE_URL="http://localhost:3000"  # Base URL for absolute URLs
 BETTER_AUTH_SECRET="..."                  # Auth secret (generate random)
 BETTER_AUTH_URL="http://localhost:3000"   # Auth callback URL
+OPENAI_API_KEY="..."                      # OpenAI API key for paragraph generation
 ```
 
 ### Git Workflow
@@ -243,11 +245,26 @@ BETTER_AUTH_URL="http://localhost:3000"   # Auth callback URL
 
 ### Typing Game Flow
 
-1. **Initialization**: Random text excerpt loaded on mount
+1. **Initialization**: Paragraph loaded on mount (AI-generated for signed-in users, curated for anonymous)
 2. **Start**: Timer begins on first keystroke
 3. **Live tracking**: WPM updates every 100ms during active game
 4. **Completion**: Game ends when timer expires OR text is finished
 5. **Results**: Final WPM, accuracy, and WPM history calculated
+
+### Paragraph Generation
+
+The game uses different paragraph sources based on user authentication status:
+
+- **Anonymous users**: Random selection from curated excerpts in `lib/excerpts.ts`
+- **Signed-in users**: AI-generated paragraphs via OpenAI's GPT-4.1-nano model
+
+AI generation is handled by the `generateParagraph()` server action in `app/actions/generate-paragraph.ts`:
+- Model: `gpt-4.1-nano`
+- Length: 150-250 characters (2-3 sentences)
+- Style: Motivational, educational, philosophical, or technology-focused
+- Topics: Technology, typing, productivity, learning, nature, coding, personal development
+- Fallback: If AI generation fails or returns invalid text, falls back to curated excerpts
+- Temperature: 0.9 for varied, creative outputs
 
 ### WPM Calculation
 
@@ -401,10 +418,19 @@ Accuracy = (correct characters / total typed) * 100
 
 ### Text Excerpts
 
-- Stored in `lib/excerpts.ts`
-- Function: `getRandomExcerpt()`
-- Returns random text for typing test
+- Curated excerpts stored in `lib/excerpts.ts`
+- Function: `getRandomExcerpt()` - Returns random text from curated collection
+- Used for anonymous users and as fallback for AI generation failures
 - Can be extended with more excerpts
+
+### AI Paragraph Generation
+
+- Server action: `generateParagraph()` in `app/actions/generate-paragraph.ts`
+- Checks authentication status via `getSession()`
+- Anonymous users → curated excerpts
+- Signed-in users → OpenAI API (GPT-4.1-nano)
+- Automatic fallback to curated excerpts on error
+- Strict validation: 50-350 character range enforced
 
 ### Leaderboard
 
