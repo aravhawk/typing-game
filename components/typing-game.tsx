@@ -64,6 +64,9 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
   // Timer preference
   const [timerPreference, setTimerPreferenceState] = useState<15 | 30>(30);
 
+  // Loading state
+  const [isLoading, setIsLoading] = useState(true);
+
   // Keyboard sounds
   const { playPressSound, playReleaseSound, enabled: soundEnabled, toggleSound } = useKeyboardSounds({ initialEnabled: true, volume: 0.9 });
 
@@ -77,29 +80,41 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
       .filter((char, index) => char === text[index]).length;
   }, []);
 
+  // Load timer preference first, then generate paragraph
   useEffect(() => {
-    // Set paragraph only on client side to avoid hydration mismatch
-    // For signed-in users, generate AI paragraph; for anonymous users, use hardcoded excerpts
-    generateParagraph().then((text) => {
-      setState((prev) => ({
-        ...prev,
-        text,
-      }));
-    });
-    // Ensure input is focused on mount
-    inputRef.current?.focus();
-  }, []);
+    const initializeGame = async () => {
+      try {
+        setIsLoading(true);
 
-  // Load timer preference from database
-  useEffect(() => {
-    getTimerPreference().then((duration) => {
-      setTimerPreferenceState(duration as 15 | 30);
-      // Update timer to match preference if game hasn't started yet
-      setState((prev) => ({
-        ...prev,
-        timer: duration,
-      }));
-    });
+        // Step 1: Load timer preference first
+        const duration = await getTimerPreference();
+        setTimerPreferenceState(duration as 15 | 30);
+
+        // Step 2: Generate paragraph after timer preference is loaded
+        const text = await generateParagraph();
+
+        // Step 3: Update state with both timer and text
+        setState((prev) => ({
+          ...prev,
+          text,
+          timer: duration,
+        }));
+      } catch (error) {
+        console.error("Error initializing game:", error);
+        // Fallback to defaults on error
+        setState((prev) => ({
+          ...prev,
+          text: "The quick brown fox jumps over the lazy dog.",
+          timer: 30,
+        }));
+      } finally {
+        setIsLoading(false);
+        // Ensure input is focused after loading
+        inputRef.current?.focus();
+      }
+    };
+
+    initializeGame();
   }, []);
 
   // Fetch leaderboard data when opponent selector is opened
@@ -398,24 +413,43 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
   }, [state.userInput, state.text, state.isGameActive, state.isGameFinished, state.startTime, onGameFinish, getCorrectChars, wpmHistory]);
 
   const handleRestart = async () => {
-    // Generate new paragraph (AI for signed-in users, hardcoded for anonymous)
-    const newText = await generateParagraph();
+    try {
+      setIsLoading(true);
 
-    setState({
-      text: newText,
-      userInput: "",
-      startTime: null,
-      timer: timerPreference, // Use the user's timer preference
-      isGameActive: false,
-      isGameFinished: false,
-      finalWPM: 0,
-      finalAccuracy: 0,
-    });
-    setCurrentWPM(0);
-    setWpmHistory([]);
-    setSavedGameResultId(null);
-    setGhostCursorPosition({ left: "-2", top: 2 });
-    inputRef.current?.focus();
+      // Generate new paragraph (AI for signed-in users, hardcoded for anonymous)
+      const newText = await generateParagraph();
+
+      setState({
+        text: newText,
+        userInput: "",
+        startTime: null,
+        timer: timerPreference, // Use the user's timer preference
+        isGameActive: false,
+        isGameFinished: false,
+        finalWPM: 0,
+        finalAccuracy: 0,
+      });
+      setCurrentWPM(0);
+      setWpmHistory([]);
+      setSavedGameResultId(null);
+      setGhostCursorPosition({ left: "-2", top: 2 });
+    } catch (error) {
+      console.error("Error restarting game:", error);
+      // Fallback to default text on error
+      setState({
+        text: "The quick brown fox jumps over the lazy dog.",
+        userInput: "",
+        startTime: null,
+        timer: timerPreference,
+        isGameActive: false,
+        isGameFinished: false,
+        finalWPM: 0,
+        finalAccuracy: 0,
+      });
+    } finally {
+      setIsLoading(false);
+      inputRef.current?.focus();
+    }
   };
 
   const handleShare = async () => {
@@ -519,17 +553,17 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              if (!state.isGameActive && timerPreference !== 15) {
+              if (!state.isGameActive && !isLoading && timerPreference !== 15) {
                 handleTimerToggle();
               }
               setTimeout(() => inputRef.current?.focus(), 0);
             }}
-            disabled={state.isGameActive}
+            disabled={state.isGameActive || isLoading}
             className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
               timerPreference === 15
                 ? 'bg-background text-foreground shadow-sm'
                 : 'text-muted-foreground hover:text-foreground'
-            } ${state.isGameActive ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            } ${state.isGameActive || isLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
             aria-label="15 second timer"
           >
             15s
@@ -537,17 +571,17 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              if (!state.isGameActive && timerPreference !== 30) {
+              if (!state.isGameActive && !isLoading && timerPreference !== 30) {
                 handleTimerToggle();
               }
               setTimeout(() => inputRef.current?.focus(), 0);
             }}
-            disabled={state.isGameActive}
+            disabled={state.isGameActive || isLoading}
             className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
               timerPreference === 30
                 ? 'bg-background text-foreground shadow-sm'
                 : 'text-muted-foreground hover:text-foreground'
-            } ${state.isGameActive ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            } ${state.isGameActive || isLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
             aria-label="30 second timer"
           >
             30s
@@ -557,41 +591,47 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
 
       <div className="max-w-4xl w-full mb-8">
         <div className="relative">
-          <div 
+          <div
             ref={textContainerRef}
-            className="text-large leading-relaxed break-words font-mono"
+            className="text-large leading-relaxed break-words font-mono min-h-[8rem] flex items-center justify-center"
             role="textbox"
             aria-label="Text to type"
           >
-            {state.text.split("").map((char, index) => {
-              const userChar = state.userInput[index];
-              let className = "text-muted-foreground/40"; // Less opacity on non-typed text
+            {isLoading ? (
+              <span className="text-muted-foreground">Paragraph generating...</span>
+            ) : (
+              state.text.split("").map((char, index) => {
+                const userChar = state.userInput[index];
+                let className = "text-muted-foreground/40"; // Less opacity on non-typed text
 
-              if (userChar) {
-                className = userChar === char ? "text-foreground" : "text-orange-500"; // Black for correct, orange for errors
-              }
+                if (userChar) {
+                  className = userChar === char ? "text-foreground" : "text-orange-500"; // Black for correct, orange for errors
+                }
 
-              return (
-                <span key={index} data-char className={className}>
-                  {char}
-                </span>
-              );
-            })}
+                return (
+                  <span key={index} data-char className={className}>
+                    {char}
+                  </span>
+                );
+              })
+            )}
           </div>
-          
+
           {/* Animated cursor */}
-          <div
-            className={`absolute w-[3px] h-8 pointer-events-none ${
-              state.isGameFinished 
-                ? 'bg-black dark:bg-white' 
-                : 'bg-blue-500'
-            } ${!isCursorMoving && !state.isGameFinished ? 'animate-cursor-blink' : ''}`}
-            style={{
-              left: `${cursorPosition.left}px`,
-              top: `${cursorPosition.top + 2}px`,
-              transition: 'left 0.1s ease-out, top 0.1s ease-out',
-            }}
-          />
+          {!isLoading && (
+            <div
+              className={`absolute w-[3px] h-8 pointer-events-none ${
+                state.isGameFinished
+                  ? 'bg-black dark:bg-white'
+                  : 'bg-blue-500'
+              } ${!isCursorMoving && !state.isGameFinished ? 'animate-cursor-blink' : ''}`}
+              style={{
+                left: `${cursorPosition.left}px`,
+                top: `${cursorPosition.top + 2}px`,
+                transition: 'left 0.1s ease-out, top 0.1s ease-out',
+              }}
+            />
+          )}
           
           {/* Ghost cursor (race mode) */}
           {raceModeEnabled && selectedOpponent && state.isGameActive && !state.isGameFinished && (
@@ -621,6 +661,7 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
         <button
           onClick={(e) => {
             e.stopPropagation();
+            if (isLoading) return;
             if (raceModeEnabled) {
               // Disable race mode
               setRaceModeEnabled(false);
@@ -631,11 +672,12 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
             }
             setTimeout(() => inputRef.current?.focus(), 0);
           }}
+          disabled={isLoading}
           className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
             raceModeEnabled
               ? 'bg-purple-500/10 text-purple-500 hover:bg-purple-500/20'
               : 'bg-muted/30 text-muted-foreground/60 hover:bg-muted/50 hover:text-muted-foreground'
-          }`}
+          } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
           aria-label={raceModeEnabled ? "Disable race mode" : "Enable race mode"}
         >
           <Flag className="w-4 h-4" />
@@ -655,7 +697,7 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
         onKeyDown={handleKeyDown}
         onKeyUp={handleKeyUp}
         autoFocus
-        disabled={state.isGameFinished}
+        disabled={state.isGameFinished || isLoading}
         className="sr-only"
         aria-label="Type the text shown above"
       />
