@@ -592,7 +592,6 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
       <div className="max-w-4xl w-full mb-8">
         <div className="relative">
           <div
-            ref={textContainerRef}
             className="text-large leading-relaxed break-words font-mono min-h-[8rem] flex items-center justify-center"
             role="textbox"
             aria-label="Text to type"
@@ -600,20 +599,22 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
             {isLoading ? (
               <span className="text-muted-foreground">Paragraph generating...</span>
             ) : (
-              state.text.split("").map((char, index) => {
-                const userChar = state.userInput[index];
-                let className = "text-muted-foreground/40"; // Less opacity on non-typed text
+              <div ref={textContainerRef} className="inline">
+                {state.text.split("").map((char, index) => {
+                  const userChar = state.userInput[index];
+                  let className = "text-muted-foreground/40"; // Less opacity on non-typed text
 
-                if (userChar) {
-                  className = userChar === char ? "text-foreground" : "text-orange-500"; // Black for correct, orange for errors
-                }
+                  if (userChar) {
+                    className = userChar === char ? "text-foreground" : "text-orange-500"; // Black for correct, orange for errors
+                  }
 
-                return (
-                  <span key={index} data-char className={className}>
-                    {char}
-                  </span>
-                );
-              })
+                  return (
+                    <span key={index} data-char className={className}>
+                      {char}
+                    </span>
+                  );
+                })}
+              </div>
             )}
           </div>
 
