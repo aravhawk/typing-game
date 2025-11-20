@@ -597,7 +597,9 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
             aria-label="Text to type"
           >
             {isLoading ? (
-              <span className="text-muted-foreground">Paragraph generating...</span>
+              <span className="text-muted-foreground">
+                {session?.user ? "Paragraph generating..." : "Loading..."}
+              </span>
             ) : (
               <div ref={textContainerRef} className="inline">
                 {state.text.split("").map((char, index) => {
