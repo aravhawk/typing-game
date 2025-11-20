@@ -9,6 +9,7 @@ import { saveGameResult, createShareableLink } from "@/app/actions/share";
 import { useKeyboardSounds } from "@/lib/use-keyboard-sounds";
 import { Volume2, VolumeX, Flag, Trophy, Medal, X } from "lucide-react";
 import { getTimerPreference, setTimerPreference } from "@/app/actions/timer-preference";
+import { useSession } from "@/lib/auth-client";
 
 interface GameState {
   text: string;
@@ -65,6 +66,9 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
 
   // Keyboard sounds
   const { playPressSound, playReleaseSound, enabled: soundEnabled, toggleSound } = useKeyboardSounds({ initialEnabled: true, volume: 0.9 });
+
+  // Authentication
+  const { data: session } = useSession();
 
   // Helper function to calculate correct characters
   const getCorrectChars = useCallback((userInput: string, text: string): number => {
@@ -653,13 +657,17 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
       {/* Timer/Share, WPM, and Restart grouped together - always rendered to reserve space */}
       <div className={`flex flex-col md:flex-row items-center justify-end gap-6 mt-8 text-large w-full max-w-4xl transition-opacity ${!state.isGameActive && !state.isGameFinished ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
         {state.isGameFinished ? (
-          <button
-            onClick={handleShare}
-            className="text-orange-500 cursor-pointer hover:text-orange-600 transition-colors bg-transparent border-none p-0"
-            aria-label="Share your typing test results"
-          >
-            Share
-          </button>
+          session?.user ? (
+            <button
+              onClick={handleShare}
+              className="text-orange-500 cursor-pointer hover:text-orange-600 transition-colors bg-transparent border-none p-0"
+              aria-label="Share your typing test results"
+            >
+              Share
+            </button>
+          ) : (
+            <span className="text-muted-foreground tabular-nums">&nbsp;</span>
+          )
         ) : (
           <span className="text-muted-foreground tabular-nums">{state.timer || timerPreference}</span>
         )}
