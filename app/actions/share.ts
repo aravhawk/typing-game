@@ -27,7 +27,12 @@ export async function saveGameResult(data: {
     }
 
     const session = await getSession();
-    const userId = session?.user?.id || null;
+    const userId = session?.user?.id;
+
+    // Only save results for authenticated users
+    if (!userId) {
+      return { success: false, gameResultId: null };
+    }
 
     const [gameResult] = await db
       .insert(gameResults)

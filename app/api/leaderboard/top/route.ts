@@ -14,7 +14,7 @@ export async function GET() {
         createdAt: gameResults.createdAt,
       })
       .from(gameResults)
-      .leftJoin(user, eq(gameResults.userId, user.id))
+      .innerJoin(user, eq(gameResults.userId, user.id))
       .orderBy(desc(gameResults.wpm))
       .limit(1);
 
