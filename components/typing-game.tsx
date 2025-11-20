@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useLayoutEffect, useCallback, useRef } from "react";
-import { getRandomExcerpt } from "@/lib/excerpts";
 import { copy } from "clipboard";
 import { nanoid } from "nanoid";
 import { toast } from "sonner";
 import { saveGameResult, createShareableLink } from "@/app/actions/share";
+import { generateParagraph } from "@/app/actions/generate-paragraph";
 import { useKeyboardSounds } from "@/lib/use-keyboard-sounds";
 import { Volume2, VolumeX, Flag, Trophy, Medal, X } from "lucide-react";
 import { getTimerPreference, setTimerPreference } from "@/app/actions/timer-preference";
@@ -78,11 +78,14 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
   }, []);
 
   useEffect(() => {
-    // Set random excerpt only on client side to avoid hydration mismatch
-    setState((prev) => ({
-      ...prev,
-      text: getRandomExcerpt(),
-    }));
+    // Set paragraph only on client side to avoid hydration mismatch
+    // For signed-in users, generate AI paragraph; for anonymous users, use hardcoded excerpts
+    generateParagraph().then((text) => {
+      setState((prev) => ({
+        ...prev,
+        text,
+      }));
+    });
     // Ensure input is focused on mount
     inputRef.current?.focus();
   }, []);
@@ -394,9 +397,12 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
     }
   }, [state.userInput, state.text, state.isGameActive, state.isGameFinished, state.startTime, onGameFinish, getCorrectChars, wpmHistory]);
 
-  const handleRestart = () => {
+  const handleRestart = async () => {
+    // Generate new paragraph (AI for signed-in users, hardcoded for anonymous)
+    const newText = await generateParagraph();
+
     setState({
-      text: getRandomExcerpt(),
+      text: newText,
       userInput: "",
       startTime: null,
       timer: timerPreference, // Use the user's timer preference

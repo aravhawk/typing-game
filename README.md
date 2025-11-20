@@ -4,6 +4,7 @@ A minimal typing test game built with Next.js, featuring real-time WPM tracking,
 
 ## Features
 
+- **AI-generated typing paragraphs** using GPT-4.1-nano for signed-in users (anonymous users get curated excerpts)
 - **15s or 30s typing tests** with timer preference saved for logged-in users
 - **Real-time WPM tracking** with live updates every 100ms
 - **WPM history charts** showing performance over time
@@ -43,6 +44,7 @@ GOOGLE_CLIENT_SECRET="your-google-client-secret"
 NEXT_PUBLIC_BASE_URL="http://localhost:3000"
 BETTER_AUTH_SECRET="your-auth-secret"
 BETTER_AUTH_URL="http://localhost:3000"
+OPENAI_API_KEY="your-openai-api-key"  # Required for AI paragraph generation
 ```
 
 3. Generate and run database migrations:
@@ -74,6 +76,7 @@ Visit `http://localhost:3000` to start typing.
 - **Next.js 16** (App Router) - React framework with server components
 - **React 19** - UI library
 - **TypeScript** - Type safety
+- **OpenAI API** - AI paragraph generation with GPT-4.1-nano
 - **Drizzle ORM** - Type-safe database queries
 - **Better Auth** - Authentication with OAuth support
 - **PostgreSQL** - Database (Neon)
@@ -110,6 +113,21 @@ Visit `http://localhost:3000` to start typing.
 - Accuracy calculated as: `(correct characters / total typed) * 100`
 - Race mode shows a ghost cursor tracking any selected leaderboard player's speed
 - Share button generates a unique short URL with WPM history and auto-generated OpenGraph images
+
+### AI Paragraph Generation
+
+The typing test uses different paragraph sources based on authentication status:
+
+- **Anonymous users**: Get random excerpts from a curated collection of motivational and educational texts
+- **Signed-in users**: Receive AI-generated paragraphs using OpenAI's GPT-4.1-nano model
+
+AI-generated paragraphs are designed to match the style and quality of the curated excerpts with these specifications:
+- Length: 150-250 characters (2-3 sentences)
+- Style: Motivational, educational, philosophical, or technology-focused
+- Topics: Technology, typing, productivity, learning, nature, coding, personal development
+- Quality: Perfect grammar, natural flow, accessible vocabulary
+
+If AI generation fails or returns an invalid result, the system automatically falls back to the curated excerpts.
 
 ## Database Schema
 
