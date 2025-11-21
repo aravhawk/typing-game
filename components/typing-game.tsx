@@ -53,6 +53,7 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
   const [currentWPM, setCurrentWPM] = useState(0);
   const [wpmHistory, setWpmHistory] = useState<Array<{ time: number; wpm: number }>>([]);
   const [savedGameResultId, setSavedGameResultId] = useState<string | null>(null);
+  const saveAttemptedRef = useRef(false); // Track if save was attempted to prevent duplicates
 
   // Race mode
   const [raceModeEnabled, setRaceModeEnabled] = useState(false);
@@ -324,6 +325,10 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
 
   useEffect(() => {
     if (state.timer === 0 && state.isGameActive && !state.isGameFinished) {
+      // Check ref synchronously to prevent duplicate saves from race conditions
+      if (saveAttemptedRef.current) return;
+      saveAttemptedRef.current = true;
+
       const calculateResults = () => {
         const endTime = Date.now();
         const duration = Math.floor((endTime - (state.startTime || endTime)) / 1000);
@@ -370,6 +375,10 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
   useEffect(() => {
     // Finish game when user completes the excerpt
     if (state.userInput.length === state.text.length && state.isGameActive && !state.isGameFinished) {
+      // Check ref synchronously to prevent duplicate saves from race conditions
+      if (saveAttemptedRef.current) return;
+      saveAttemptedRef.current = true;
+
       const calculateResults = () => {
         const endTime = Date.now();
         const duration = Math.floor((endTime - (state.startTime || endTime)) / 1000);
@@ -432,6 +441,7 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
       setCurrentWPM(0);
       setWpmHistory([]);
       setSavedGameResultId(null);
+      saveAttemptedRef.current = false; // Reset save attempt tracking for new game
       setGhostCursorPosition({ left: "-2", top: 2 });
     } catch (error) {
       console.error("Error restarting game:", error);
