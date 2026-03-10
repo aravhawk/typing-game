@@ -133,6 +133,25 @@ export function TypingGame({ onGameFinish }: TypingGameProps) {
     }
   }, [showOpponentSelector]);
 
+  // Auto-focus the input when the user starts typing anywhere on the page
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Don't steal focus from other inputs/textareas or modals
+      const target = e.target as HTMLElement;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) {
+        return;
+      }
+
+      // Focus the hidden input for printable characters and backspace
+      if (!state.isGameFinished && !isLoading && (e.key.length === 1 || e.key === "Backspace")) {
+        inputRef.current?.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleGlobalKeyDown);
+    return () => document.removeEventListener("keydown", handleGlobalKeyDown);
+  }, [state.isGameFinished, isLoading]);
+
   // Track cursor movement state
   useEffect(() => {
     // Cursor is moving
