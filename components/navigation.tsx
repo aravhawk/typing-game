@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { authClient, signOut } from "@/lib/auth-client";
 import { useSession } from "@/lib/auth-client";
-import { Github, LogIn, LogOut, Medal } from "lucide-react";
+import { Code2, LogIn, LogOut, Medal } from "lucide-react";
 
 export function Navigation() {
   const { data: sessionData, isPending } = useSession();
@@ -37,7 +37,7 @@ export function Navigation() {
           className="hover:opacity-80 transition-opacity"
           aria-label="View source on GitHub"
         >
-          <Github className="w-6 h-6" />
+          <Code2 className="w-6 h-6" />
         </a>
         {sessionData?.user ? (
           <>
@@ -80,4 +80,3 @@ export function Navigation() {
     </nav>
   );
 }
-
